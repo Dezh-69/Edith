@@ -1,0 +1,72 @@
+Product Requirements Document
+App Name:  Edith
+
+Document Status
+Complete draft. All 17 original features now have a defined behavior, and every open architecture question from the review has an answer. Remaining unknowns are the normal kind a developer surfaces once building starts, not gaps in what the app is supposed to do.
+
+1. Overview
+Edith is a mobile and desktop app for students to open, edit, annotate, organize, and convert study files in one place. The app centers on active reading and note taking on PDFs, Word documents, and images, with tools for temporary content covering, freehand drawing, and page management. Files sync between a student's phone and desktop through a device pairing code, without a traditional account or password.
+
+2. Goals
+Let a student open, mark up, and organize study materials without switching between separate apps for reading, note taking, and file conversion.
+Keep files synced between a student's phone and desktop through a paired device connection, without requiring a full login system.
+Give a fast way to scan physical materials into digital, searchable files.
+3. Target User
+The primary user is a college student who annotates study materials such as lecture slides, readings, and scanned notes. A student uses the app during study sessions on both a phone and a laptop or desktop, and needs their files and folders to match on both devices once paired.
+
+4. Platform and Technical Scope
+The app targets mobile (Android and iOS) and desktop (Windows and macOS). A cross platform framework such as Flutter can cover phone, tablet, and desktop from one codebase, though native modules are still needed for OS-specific features such as home screen widgets and the floating overlay, since each OS implements these differently. Sync between devices uses a pairing code rather than a login, generated on one device and entered on the other to link both to the same Firebase project. Firebase (Authentication and Firestore) holds the pairing record, notes, labels, and file metadata. The actual file bytes live in a separate Backblaze B2 bucket, referenced from Firestore rather than stored inside Firebase itself, since Firebase's own file storage requires a paid plan with a credit card on file. If the only paired device is lost or reset, a printed backup recovery code, generated at setup and stored separately by the student, restores access.
+
+5. Feature Requirements
+ID	Feature	Description	Priority
+F1	Open files	Open PDF, Word, and image files from local storage, cloud storage, or directly from the camera. No fixed file size limit for version 1.	Must
+F2	Edit and annotate	Highlight with a full custom color picker. Zoom by pinch only. View 2 or more pages at once in freeform panes the student can resize and reposition anywhere on screen.	Must
+F3	Note saving with labels	Save notes attached to a file, tagged with multiple labels per note, like tags.	Must
+F4	Redaction sticker	Cover content while viewing, restored when unhidden. This is a temporary study cover, not a permanent redaction, so the file itself is never altered.	Should
+F5	Sticker sheet	A movable, resizable surface for freehand pen or finger drawing, that can be shown or hidden, similar to picture in picture. No limit on how many can be open at once, the student manages screen clutter.	Should
+F6	Auto save	Save open files and notes automatically every 5 minutes. Writes to local storage first, then syncs to the cloud in the background.	Must
+F7	Widget	A home screen or desktop widget showing recent files and a one tap scan shortcut.	Could
+F8	OCR scanner	Scan a physical document with the camera, or use an existing image file, and convert it to text. The recognized text exports as a separate text file.	Should
+F9	Split screen	View and edit two different files independently, at the same time, side by side.	Should
+F10	Merge files	Combine pages from two or more files into one new file.	Should
+F11	Page reorder	Drag and drop to reorder pages within one file. Reordering does not move pages between files.	Should
+F12	Cloud storage and sync	Store notes, labels, and file metadata in Firebase Firestore. Store the actual file bytes in Backblaze B2. No login. A device pairing code links a phone and desktop so both sync to the same Firebase project and B2 bucket. A printed backup recovery code covers device loss.	Must
+F13	Floating window overlay	A mini viewer that stays on top of other apps, where the student can still annotate while using something else.	Could
+F14	File conversion	Convert between PDF, Word, and image formats. The student picks, per conversion, whether to preserve the original layout closely or extract readable content only.	Should
+F15	File customization	Rename files and organize them into folders.	Must
+F16	Locked drawing mode	While drawing, no other menu or option appears on screen. Unlocked with a fixed button always visible in one screen corner. Whether the lock persists after the app closes is a setting the student controls.	Should
+F17	Picture input	Add a picture from the camera or photo library. The student chooses each time whether it becomes a new page or attaches to a note.	Must
+6. Non-Functional Requirements
+Performance: version 1 has no fixed file size cap, by decision. Files load a page at a time instead of loading the whole file into memory at once, which keeps memory use low regardless of file size. Test against one specific low end device, a few years old with limited RAM, before the freeform pane and sticker sheet features are finished, to find the real performance ceiling on target hardware. Show the student a warning once a file passes roughly 100 MB, a reasonable starting point since scanned study PDFs tend to get heavy on entry level phones past that size. This number is an estimate, not a tested fact, and should move based on what the device testing actually shows.
+Security: files stored in Backblaze B2 need encryption at rest. B2 application keys must never sit inside the app itself, since a compiled app can be decompiled and any embedded key extracted. A Firebase Cloud Function should request a short lived, scoped upload authorization from B2 on the app's behalf for each upload, keeping the real key server side only. The device pairing code is the main access control in place of a login, so it needs an expiry or a way to revoke a lost device. The printed backup recovery code needs the same level of care as a password, and the app should say so clearly to the student.
+Offline access: local caching of recently opened files, consistent with the local first auto save behavior.
+Data privacy: storing student files and personal data falls under the Philippines Data Privacy Act of 2012 if users are based in the Philippines. Confirm the exact obligations with a legal reference before launch, since this document is not a legal review.
+Accessibility: define minimum font size, contrast, and touch target size for students with visual or motor impairments, especially with freeform panes and multiple sticker sheets that can shrink very small on screen.
+Backend limits: Firebase's free Spark plan caps Firestore at 1 GiB of stored data, 50,000 document reads, 20,000 writes, and 20,000 deletes per day, with 10 GiB of monthly egress, all confirmed against Firebase's own pricing page. Since Firestore only holds metadata rather than file bytes, this ceiling is unlikely to be a problem. Backblaze B2 caps free file storage at 10 GB, with free egress up to 3 times whatever is currently stored. Design around the 10 GB figure, since heavy scanned study files will reach it faster than the number suggests.
+7. Assumptions
+This document assumes Firebase Firestore covers the database for notes, labels, and file metadata, and that Backblaze B2 covers the actual file storage, connected through a reference stored in Firestore. It assumes the pairing code is generated on one device and entered on the other, similar to pairing a smart TV or a second browser session. It assumes OCR defaults to English unless a language setting is added later, since language scope was not specified.
+
+8. Out of Scope for Version 1
+Universal file format conversion beyond PDF, Word, and images is out of scope for version 1. Home screen and desktop widgets, and the floating window overlay, are deferred past version 1 due to the separate native work needed per OS. A traditional account and login system is out of scope, replaced by the device pairing code and its printed backup recovery code. Multi user collaboration on the same file was not in the original feature list and stays out of scope unless added later.
+
+9. Remaining Implementation Details
+These are normal build-time decisions, not open product questions. OCR language support beyond English and the exact expiry rule for the pairing code still need a technical decision once development begins.
+
+10. Success Metrics
+Suggested metrics: average time to open and annotate a file, percentage of sessions with a successful auto save, number of files converted per week, and student retention after the first week of use. These need confirmation against the actual goals for the app before they are finalized.
+
+11. Recommended Tools
+Flutter, free and open source, covers Android, iOS, Windows, and macOS from one codebase, matching the platform decision above. Visual Studio Code or Android Studio, both free, work as the editor.
+
+For PDF viewing and annotation, the Syncfusion Flutter PDF Viewer is free under Syncfusion's Community License for anyone under 1 million dollars in yearly revenue and under 5 developers, which a student project meets. It includes virtual scrolling, matching the lazy loading recommendation in the performance section, plus built in text highlight annotations.
+
+For OCR, google_mlkit_text_recognition is a free, MIT licensed package that runs on the device with no per scan cost, but it only works on Android and iOS, not on Windows or macOS. Tesseract OCR, also free and open source, is the standard option for the desktop side, though it needs more setup work.
+
+For the freehand drawing in the sticker sheet and locked drawing mode, Flutter's own CustomPainter needs no extra license. The free package perfect_freehand can smooth out pen strokes if needed.
+
+For file conversion between PDF, Word, and image, LibreOffice is free and open source, and runs in a headless, command line mode that the app calls as a background process.
+
+Firebase handles authentication and the notes, labels, and metadata database, fully free on the Spark plan with no credit card required, as long as Firebase's own file storage product is avoided, since that specific piece is the part that needs a paid plan. Backblaze B2 handles the actual file storage instead, free up to 10 GB with no card required either. A small Firebase Cloud Function sits between the two, requesting short lived upload access from B2 so no B2 key ever ships inside the app. Figma, free tier, is useful for mocking up the freeform pane layout before it becomes real layout code. Git and GitHub cover version control for free.
+
+As a verified student, the GitHub Student Developer Pack is worth claiming, and includes a free JetBrains license, GitHub Pro, and some cloud credit, even if this project only uses part of it.
+
