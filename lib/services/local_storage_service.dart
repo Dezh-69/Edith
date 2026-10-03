@@ -198,4 +198,22 @@ class LocalStorageService {
     final lower = query.toLowerCase();
     return _files.where((f) => f.displayName.toLowerCase().contains(lower)).toList();
   }
+
+  /// Filter files by various criteria (type, size, date).
+  List<EdithFile> filterFiles({
+    String? type,
+    int? minSizeBytes,
+    int? maxSizeBytes,
+    DateTime? afterDate,
+    DateTime? beforeDate,
+  }) {
+    return _files.where((f) {
+      if (type != null && f.type != type) return false;
+      if (minSizeBytes != null && f.sizeBytes < minSizeBytes) return false;
+      if (maxSizeBytes != null && f.sizeBytes > maxSizeBytes) return false;
+      if (afterDate != null && f.createdAt.isBefore(afterDate)) return false;
+      if (beforeDate != null && f.createdAt.isAfter(beforeDate)) return false;
+      return true;
+    }).toList();
+  }
 }

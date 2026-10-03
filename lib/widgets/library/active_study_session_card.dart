@@ -99,19 +99,24 @@ class ActiveStudySessionCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      _buildOverlapAvatar('Q1', secondaryFixed, Colors.black),
-                      _buildOverlapAvatar('Q2', secondaryFixedDim, Colors.black),
-                      _buildOverlapAvatar('+6', tertiaryFixed, Colors.black),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Spaced Repetition Active',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: tertiaryFixedDim,
+                  Flexible(
+                    child: Row(
+                      children: [
+                        _buildOverlapAvatar('Q1', secondaryFixed, Colors.black),
+                        _buildOverlapAvatar('Q2', secondaryFixedDim, Colors.black),
+                        _buildOverlapAvatar('+6', tertiaryFixed, Colors.black),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Spaced Repetition Active',
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tertiaryFixedDim,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () {},
